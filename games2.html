@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>凡尘修仙录 - 网页修仙小游戏</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{
+            background: linear-gradient(#101828,#1c2b46);
+            font-family: "微软雅黑",serif;
+            color:#fff;
+            overflow:hidden;
+            user-select:none;
+        }
+        .game-box{
+            width:100vw;
+            height:100vh;
+            position:relative;
+        }
+        /* 顶部信息栏 */
+        .top-bar{
+            width:100%;
+            height:70px;
+            background:rgba(0,20,40,0.75);
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:0 30px;
+            border-bottom:1px solid rgba(100,180,255,0.3);
+            box-shadow:0 2px 15px #003366;
+            z-index:10;
+            position:relative;
+        }
+        .role-info{
+            display:flex;
+            align-items:center;
+            gap:15px;
+        }
+        .role-avatar{
+            width:55px;
+            height:55px;
+            border-radius:50%;
+            border:2px solid #73b8ff;
+            box-shadow:0 0 12px #4299ff;
+            object-fit:cover;
+        }
+        .role-name{
+            font-size:18px;
+            color:#73b8ff;
+            text-shadow:0 0 6px #2488ff;
+        }
+        .role-level{
+            font-size:14px;
+            color:#ffcc66;
+        }
+        .exp-bar{
+            width:180px;
+            height:10px;
+            background:#223355;
+            border-radius:5px;
+            margin-top:5px;
+            overflow:hidden;
+        }
+        .exp-inner{
+            height:100%;
+            background:linear-gradient(90deg,#ffcc33,#ff9900);
+            border-radius:5px;
+            transition:0.5s;
+        }
+        .resource{
+            display:flex;
+            gap:30px;
+            font-size:16px;
+        }
+        .res-item span{color:#ffdd77;}
+
+        /* 战斗主场景 */
+        .fight-scene{
+            width:100%;
+            height:calc(100vh - 190px);
+            display:flex;
+            align-items:center;
+            justify-content:space-around;
+            position:relative;
+            background:url('') center/cover;
+        }
+        /* 人物样式 */
+        .hero{
+            width:160px;
+            height:220px;
+            position:relative;
+            animation:heroIdle 2s infinite ease-in-out;
+        }
+        @keyframes heroIdle{
+            0%,100%{transform:translateY(0);}
+            50%{transform:translateY(-8px);}
+        }
+        .hero img{
+            width:100%;
+            height:100%;
+            object-fit:contain;
+            filter:drop-shadow(0 0 15px #66aaff);
+        }
+        /* 怪物样式 */
+        .monster{
+            width:150px;
+            height:200px;
+            position:relative;
+            animation:monsterShake 1.5s infinite;
+        }
+        @keyframes monsterShake{
+            0%,100%{transform:scale(1);}
+            50%{transform:scale(1.05);}
+        }
+        .monster img{
+            width:100%;
+            height:100%;
+            object-fit:contain;
+            filter:drop-shadow(0 0 10px #ff5555);
+        }
+        /* 血条 */
+        .hp-box{
+            width:130px;
+            height:12px;
+            background:#222;
+            border-radius:6px;
+            overflow:hidden;
+            margin:0 auto 8px;
+        }
+        .hp-hero{background:linear-gradient(90deg,#33ff66,#00cc44);height:100%;transition:0.3s;}
+        .hp-monster{background:linear-gradient(90deg,#ff4444,#cc0000);height:100%;transition:0.3s;}
+
+        /* 炫酷技能特效 */
+        .skill-effect{
+            position:absolute;
+            top:50%;
+            left:50%;
+            transform:translate(-50%,-50%);
+            width:300px;
+            height:300px;
+            border-radius:50%;
+            pointer-events:none;
+            display:none;
+        }
+        .skill1{
+            background:radial-gradient(circle,#73e7ff 0%,transparent 70%);
+            animation:skillGlow 0.6s ease-out;
+        }
+        .skill2{
+            background:radial-gradient(circle,#ff77aa 0%,transparent 70%);
+            animation:skillFire 0.7s ease-out;
+        }
+        .skill3{
+            background:radial-gradient(circle,#b377ff 0%,transparent 70%);
+            animation:skillThunder 0.8s ease-out;
+        }
+        @keyframes skillGlow{
+            0%{transform:translate(-50%,-50%) scale(0.3);opacity:1;}
+            100%{transform:translate(-50%,-50%) scale(1.6);opacity:0;}
+        }
+        @keyframes skillFire{
+            0%{transform:translate(-50%,-50%) scale(0.2) rotate(0deg);opacity:1;}
+            100%{transform:translate(-50%,-50%) scale(1.8) rotate(180deg);opacity:0;}
+        }
+        @keyframes skillThunder{
+            0%{transform:translate(-50%,-50%) scale(0.4);opacity:1;box-shadow:0 0 30px #b377ff;}
+            100%{transform:translate(-50%,-50%) scale(2);opacity:0;box-shadow:0 0 80px #b377ff;}
+        }
+
+        /* 底部技能栏 */
+        .skill-bar{
+            width:100%;
+            height:120px;
+            background:rgba(0,15,30,0.8);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:20px;
+            border-top:1px solid rgba(100,180,255,0.3);
+        }
+        .skill-btn{
+            width:75px;
+            height:75px;
+            border-radius:12px;
+            border:2px solid #5599ff;
+            background:rgba(20,50,90,0.7);
+            color:#fff;
+            font-size:14px;
+            cursor:pointer;
+            transition:0.3s;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+        }
+        .skill-btn:hover{
+            transform:translateY(-6px);
+            box-shadow:0 0 18px #4299ff;
+            border-color:#88ccff;
+        }
+        .skill-btn:active{transform:scale(0.95);}
+        .auto-btn{
+            padding:12px 28px;
+            background:linear-gradient(#2d77ff,#1555cc);
+            border:none;
+            border-radius:8px;
+            color:#fff;
+            font-size:16px;
+            cursor:pointer;
+            box-shadow:0 0 10px #2d77ff;
+        }
+        .auto-btn.on{background:linear-gradient(#ff6644,#cc3311);box-shadow:0 0 10px #ff4422;}
+
+        /* 战斗文字飘字 */
+        .float-text{
+            position:absolute;
+            font-size:22px;
+            font-weight:bold;
+            pointer-events:none;
+            animation:floatUp 1s ease-out forwards;
+        }
+        @keyframes floatUp{
+            0%{opacity:1;transform:translateY(0);}
+            100%{opacity:0;transform:translateY(-60px);}
+        }
+        .crit{color:#ff3333;font-size:28px;}
+        .normal{color:#ffff66;}
+    </style>
+</head>
+<body>
+<div class="game-box">
+    <!-- 顶部角色信息 -->
+    <div class="top-bar">
+        <div class="role-info">
+            <img class="role-avatar" src="https://img0.baidu.com/it/u=1669232131,2773212119&fm=253&fmt=auto&app=138&f=JPEG" alt="修仙角色">
+            <div>
+                <div class="role-name">青云仙尊</div>
+                <div class="role-level">境界：炼气一层 <span id="level">1</span>级</div>
+                <div class="exp-bar"><div class="exp-inner" id="expBar" style="width:0%"></div></div>
+            </div>
+        </div>
+        <div class="resource">
+            <div>灵力：<span id="mp">1000</span></div>
+            <div>灵石：<span id="coin">888</span></div>
+            <div>战力：<span id="power">1200</span></div>
+        </div>
+    </div>
+
+    <!-- 战斗场景 -->
+    <div class="fight-scene" id="fightScene">
+        <!-- 玩家角色 -->
+        <div class="hero">
+            <div class="hp-box"><div class="hp-hero" id="heroHp" style="width:100%"></div></div>
+            <img src="https://img2.baidu.com/it/u=3803036312,1815163338&fm=253&fmt=auto&app=138&f=JPEG" alt="修仙主角">
+        </div>
+        <!-- 技能特效容器 -->
+        <div class="skill-effect skill1" id="skill1"></div>
+        <div class="skill-effect skill2" id="skill2"></div>
+        <div class="skill-effect skill3" id="skill3"></div>
+        <!-- 怪物 -->
+        <div class="monster">
+            <div class="hp-box"><div class="hp-monster" id="monsterHp" style="width:100%"></div></div>
+            <img id="monsterImg" src="https://img1.baidu.com/it/u=2266979766,3822553221&fm=253&fmt=auto&app=138&f=JPEG" alt="妖兽">
+        </div>
+    </div>
+
+    <!-- 底部技能栏 -->
+    <div class="skill-bar">
+        <button class="skill-btn" onclick="useSkill(1)">
+            <span>青冥剑气</span>
+            <small>消耗50灵力</small>
+        </button>
+        <button class="skill-btn" onclick="useSkill(2)">
+            <span>焚天诀</span>
+            <small>消耗80灵力</small>
+        </button>
+        <button class="skill-btn" onclick="useSkill(3)">
+            <span>九霄雷法</span>
+            <small>消耗120灵力</small>
+        </button>
+        <button class="auto-btn" id="autoBtn" onclick="toggleAuto()">自动打怪</button>
+    </div>
+</div>
+
+<script>
+// 角色数据
+let player = {
+    level:1,
+    hp:1000,maxHp:1000,
+    mp:1000,maxMp:1000,
+    attack:120,defense:60,
+    exp:0,needExp:200,
+    coin:888,power:1200
+};
+// 怪物数据
+let monster = {
+    name:"黑风妖兽",
+    hp:1200,maxHp:1200,
+    attack:85,defense:35,
+    expDrop:80,coinDrop:30
+};
+// 自动战斗
+let autoFight = false;
+let autoTimer = null;
+
+// DOM元素
+let heroHp = document.getElementById("heroHp");
+let monsterHp = document.getElementById("monsterHp");
+let expBar = document.getElementById("expBar");
+let levelText = document.getElementById("level");
+let mpText = document.getElementById("mp");
+let coinText = document.getElementById("coin");
+let powerText = document.getElementById("power");
+let autoBtn = document.getElementById("autoBtn");
+let fightScene = document.getElementById("fightScene");
+let skill1 = document.getElementById("skill1");
+let skill2 = document.getElementById("skill2");
+let skill3 = document.getElementById("skill3");
+let monsterImg = document.getElementById("monsterImg");
+
+// 更新界面数据
+function updateUI(){
+    heroHp.style.width = (player.hp/player.maxHp*100)+"%";
+    monsterHp.style.width = (monster.hp/monster.maxHp*100)+"%";
+    expBar.style.width = (player.exp/player.needExp*100)+"%";
+    levelText.innerText = player.level;
+    mpText.innerText = player.mp;
+    coinText.innerText = player.coin;
+    powerText.innerText = player.power;
+}
+
+// 飘字伤害
+function showDamage(x,y,num,isCrit=false){
+    let txt = document.createElement("div");
+    txt.className = "float-text "+(isCrit?"crit":"normal");
+    txt.innerText = "-"+num;
+    txt.style.left = x+"px";
+    txt.style.top = y+"px";
+    fightScene.appendChild(txt);
+    setTimeout(()=>txt.remove(),1000);
+}
+
+// 使用技能
+function useSkill(type){
+    if(player.mp <= 0) return alert("灵力不足！");
+    let damage = 0,consume=0,eff=null;
+    switch(type){
+        case 1:
+            consume=50;damage=player.attack*1.2;eff=skill1;
+            break;
+        case 2:
+            consume=80;damage=player.attack*1.8;eff=skill2;
+            break;
+        case 3:
+            consume=120;damage=player.attack*2.8;eff=skill3;
+            break;
+    }
+    player.mp -= consume;
+    eff.style.display="block";
+    setTimeout(()=>eff.style.display="none",600);
+    // 计算最终伤害
+    let realDmg = Math.floor(damage - monster.defense*0.5);
+    realDmg = realDmg<10?10:realDmg;
+    let isCrit = Math.random()>0.7;
+    if(isCrit) realDmg *=2;
+    monster.hp -= realDmg;
+    showDamage(window.innerWidth*0.6,220,realDmg,isCrit);
+    updateUI();
+    // 怪物反击
+    setTimeout(monsterAttack,400);
+    // 击杀怪物
+    if(monster.hp<=0) monsterDie();
+}
+
+// 怪物攻击
+function monsterAttack(){
+    let dmg = Math.floor(monster.attack - player.defense*0.4);
+    dmg = dmg<5?5:dmg;
+    player.hp -= dmg;
+    showDamage(window.innerWidth*0.35,220,dmg,false);
+    updateUI();
+    if(player.hp<=0){
+        alert("你被妖兽击败，打坐恢复灵力血量！");
+        player.hp = player.maxHp;
+        player.mp = player.maxMp;
+        updateUI();
+        closeAuto();
+    }
+}
+
+// 怪物死亡 升级刷怪
+function monsterDie(){
+    player.exp += monster.expDrop;
+    player.coin += monster.coinDrop;
+    // 升级判定
+    while(player.exp >= player.needExp){
+        player.exp -= player.needExp;
+        player.level++;
+        player.attack +=25;
+        player.defense +=15;
+        player.maxHp +=200;
+        player.hp = player.maxHp;
+        player.maxMp +=150;
+        player.mp = player.maxMp;
+        player.power +=350;
+        player.needExp = Math.floor(player.needExp*1.5);
+        alert(`恭喜突破！成功晋升${player.level}级，属性全面提升！`);
+    }
+    updateUI();
+    // 刷新更强怪物
+    setTimeout(refreshMonster,1200);
+}
+
+// 刷新怪物
+function refreshMonster(){
+    let rand = Math.random();
+    if(rand>0.7){
+        monster.name="赤炎魔虎";
+        monster.hp=1600+player.level*150;
+        monster.attack=110+player.level*12;
+        monster.defense=50+player.level*6;
+        monsterImg.src="https://img0.baidu.com/it/u=1932211301,3201626110&fm=253&fmt=auto&app=138&f=JPEG";
+    }else if(rand>0.4){
+        monster.name="青鳞巨蟒";
+        monster.hp=1400+player.level*120;
+        monster.attack=95+player.level*10;
+        monster.defense=42+player.level*5;
+        monsterImg.src="https://img2.baidu.com/it/u=1223311022,2903322111&fm=253&fmt=auto";
+    }else{
+        monster.name="黑风妖兽";
+        monster.hp=1200+player.level*100;
+        monster.attack=85+player.level*8;
+        monster.defense=35+player.level*4;
+        monsterImg.src="https://img1.baidu.com/it/u=2266979766,3822553221&fm=253&fmt=auto&app=138&f=JPEG";
+    }
+    monster.maxHp = monster.hp;
+    monster.expDrop = 80+player.level*15;
+    monster.coinDrop = 30+player.level*8;
+    updateUI();
+}
+
+// 开启关闭自动战斗
+function toggleAuto(){
+    autoFight = !autoFight;
+    if(autoFight){
+        autoBtn.classList.add("on");
+        autoTimer = setInterval(()=>{
+            if(player.mp>=50) useSkill(1);
+            else player.mp=player.maxMp;
+        },2200);
+    }else{
+        closeAuto();
+    }
+}
+function closeAuto(){
+    autoFight=false;
+    autoBtn.classList.remove("on");
+    clearInterval(autoTimer);
+}
+
+// 初始化
+updateUI();
+</script>
+</body>
+</html>
