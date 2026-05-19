@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>剑御九天 - 大型修仙页游</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"微软雅黑",sans-serif;background:#050a18;color:#e6f0ff;overflow:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#4285f4;border-radius:3px}
+
+/* 全局背景 */
+.game-main{width:100vw;height:100vh;position:relative}
+.world-bg{width:100%;height:100%;position:absolute;z-index:1;background:url(https://picsum.photos/id/1043/1920/1080) center/cover}
+.bg-shade{width:100%;height:100%;background:rgba(3,8,22,0.55);position:absolute;z-index:2}
+
+/* 顶部角色信息栏 */
+.top-user-bar{
+    width:100%;height:85px;position:relative;z-index:10;
+    background:linear-gradient(rgba(0,0,0,0.75),transparent);
+    display:flex;align-items:center;justify-content:space-between;padding:0 40px
+}
+.user-info{display:flex;align-items:center;gap:18px}
+.user-avatar{width:65px;height:65px;border-radius:50%;border:2px solid #ffd700;box-shadow:0 0 15px #ffb300}
+.user-name-box h2{font-size:22px;color:#ffe899;letter-spacing:1px}
+.user-name-box p{font-size:14px;color:#90caf9;margin:5px 0}
+.exp-progress{width:220px;height:11px;background:#121c33;border-radius:6px;overflow:hidden}
+.exp-fill{height:100%;background:linear-gradient(90deg,#ffb700,#ff6a00);transition:0.6s}
+.resource-box{display:flex;gap:35px;font-size:17px}
+.res-item span{color:#5ce0e6;font-weight:bold}
+
+/* 主功能导航栏 */
+.nav-menu{
+    width:100%;height:50px;background:rgba(10,20,40,0.7);
+    position:relative;z-index:9;display:flex;justify-content:center;gap:10px
+}
+.nav-btn{
+    padding:0 25px;height:100%;border:none;background:transparent;color:#c0d8ff;
+    font-size:16px;cursor:pointer;transition:0.3s;border-bottom:3px solid transparent
+}
+.nav-btn.active{border-bottom:3px solid #42a5f5;color:#fff;background:rgba(30,60,110,0.5)}
+.nav-btn:hover{background:rgba(25,50,90,0.4)}
+
+/* 主内容区域 */
+.content-wrap{
+    width:100%;height:calc(100vh - 135px);position:relative;z-index:8;
+    display:flex
+}
+/* 左侧角色面板 */
+.left-panel{width:280px;height:100%;background:rgba(8,15,30,0.65);padding:20px;border-right:1px solid #284066}
+.panel-title{font-size:18px;color:#ffd369;margin-bottom:15px;padding-bottom:8px;border-bottom:1px solid #2d4870}
+.attr-item{display:flex;justify-content:space-between;padding:8px 0;font-size:15px}
+/* 装备栏 */
+.equip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px}
+.equip-slot{width:70px;height:70px;background:rgba(20,35,60,0.7);border:1px solid #365888;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#7788aa}
+
+/* 中间战斗场景 */
+.center-scene{flex:1;height:100%;display:flex;align-items:center;justify-content:space-around;position:relative}
+/* 剑仙主角 */
+.hero-model{width:260px;height:360px;position:relative}
+@keyframes heroIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.hero-model{animation:heroIdle 3s ease-in-out infinite}
+.hero-model img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 25px #63a4ff)}
+/* 怪物模型 */
+.monster-model{width:240px;height:330px}
+@keyframes monsterShake{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.monster-model{animation:monsterShake 2s infinite}
+.monster-model img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 20px #ff5252)}
+/* 血条 */
+.hp-bar{width:170px;height:15px;background:#111;border-radius:8px;overflow:hidden;margin:0 auto 12px;border:1px solid #444}
+.hp-player{height:100%;background:linear-gradient(#4ade80,#16a34a);transition:0.4s}
+.hp-monster{height:100%;background:linear-gradient(#f87171,#dc2626);transition:0.4s}
+
+/* 全屏技能特效 */
+.skill-burst{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    z-index:15;display:none;pointer-events:none
+}
+.skill-jianqi{width:750px;height:750px;background:radial-gradient(circle,#93c5fd 0%,transparent 75%);animation:jianqiAnim 0.8s ease-out}
+.skill-lei{width:700px;height:700px;background:radial-gradient(circle,#c4b5fd 0%,transparent 75%);animation:leiAnim 0.9s ease-out}
+.skill-zhantian{width:950px;height:260px;background:linear-gradient(90deg,transparent,#7dd3fc,#fff,#7dd3fc,transparent);animation:zhantianAnim 0.7s ease-out}
+@keyframes jianqiAnim{0%{transform:translate(-50%,-50%) scale(0.15);opacity:1}100%{transform:translate(-50%,-50%) scale(2.8);opacity:0}}
+@keyframes leiAnim{0%{transform:translate(-50%,-50%) scale(0.2);opacity:1}100%{transform:translate(-50%,-50%) scale(3);opacity:0}}
+@keyframes zhartianAnim{0%{transform:translate(-50%,-50%) scaleX(0.1);opacity:0.2}100%{transform:translate(-50%,-50%) scaleX(3.5);opacity:0}}
+
+/* 伤害浮动文字 */
+.float-dmg{position:absolute;font-size:28px;font-weight:bold;z-index:20;animation:dmgUp 1.4s ease-out forwards}
+@keyframes dmgUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-80px)}}
+.crit-dmg{color:#ff2222;font-size:36px}
+.nor-dmg{color:#ffdd33}
+
+/* 右侧功能面板 */
+.right-panel{width:300px;height:100%;background:rgba(8,15,30,0.65);padding:20px;border-left:1px solid #284066}
+.task-item{padding:12px;background:rgba(22,38,66,0.6);border-radius:6px;margin-bottom:10px;font-size:15px}
+.task-title{color:#ffd700;margin-bottom:5px}
+
+/* 底部技能操作栏 */
+.bottom-operate{
+    width:100%;height:130px;position:relative;z-index:10;
+    background:linear-gradient(transparent,rgba(0,5,15,0.8));
+    display:flex;align-items:center;justify-content:center;gap:25px
+}
+.skill-key{
+    width:90px;height:90px;border-radius:15px;background:rgba(18,32,58,0.85);
+    border:2px solid #5498e6;color:#fff;cursor:pointer;transition:0.3s;font-size:15px
+}
+.skill-key:hover{transform:translateY(-8px);box-shadow:0 0 30px #3b82f6}
+.func-key{padding:15px 35px;border-radius:10px;border:none;font-size:16px;color:#fff;cursor:pointer}
+.auto-open{background:linear-gradient(#ef4444,#b91c1c)}
+.auto-close{background:linear-gradient(#3b82f6,#1d4ed8)}
+
+/* 弹窗通用样式 */
+.pop-box{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:550px;background:rgba(10,18,35,0.95);border:2px solid #4285f4;
+    border-radius:12px;z-index:100;padding:25px;display:none
+}
+.pop-title{font-size:20px;color:#ffd369;text-align:center;margin-bottom:20px}
+.pop-close{position:absolute;top:15px;right:20px;font-size:22px;color:#999;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="game-main">
+    <div class="world-bg"></div>
+    <div class="bg-shade"></div>
+
+    <!-- 顶部用户信息 -->
+    <div class="top-user-bar">
+        <div class="user-info">
+            <img class="user-avatar" src="https://picsum.photos/id/1012/100/100">
+            <div class="user-name-box">
+                <h2>九霄剑仙</h2>
+                <p>当前境界：<span id="userLevel">炼气一重</span> | 等级：<span id="userLv">1</span>级</p>
+                <div class="exp-progress"><div class="exp-fill" id="userExp"></div></div>
+            </div>
+        </div>
+        <div class="resource-box">
+            <div>灵石 <span id="stoneNum">9999</span></div>
+            <div>仙元 <span id="yuanNum">5200</span></div>
+            <div>战力 <span id="fightPower">3800</span></div>
+        </div>
+    </div>
+
+    <!-- 导航菜单 -->
+    <div class="nav-menu">
+        <button class="nav-btn active" onclick="switchPage('fight')">野外打怪</button>
+        <button class="nav-btn" onclick="switchPage('equip')">装备锻造</button>
+        <button class="nav-btn" onclick="switchPage('pet')">灵宠坐骑</button>
+        <button class="nav-btn" onclick="switchPage('task')">主线任务</button>
+        <button class="nav-btn" onclick="switchPage('map')">世界地图</button>
+        <button class="nav-btn" onclick="switchPage('cultivate')">打坐修炼</button>
+    </div>
+
+    <!-- 主体内容 -->
+    <div class="content-wrap">
+        <!-- 左侧属性面板 -->
+        <div class="left-panel">
+            <h3 class="panel-title">人物属性</h3>
+            <div class="attr-item"><span>基础气血</span><span id="userHp">2200</span></div>
+            <div class="attr-item"><span>真元法力</span><span id="userMp">1800</span></div>
+            <div class="attr-item"><span>剑道攻击</span><span id="userAtk">320</span></div>
+            <div class="attr-item"><span>肉身防御</span><span id="userDef">160</span></div>
+            <div class="attr-item"><span>暴击几率</span><span id="userCrit">18%</span></div>
+            <div class="attr-item"><span>闪避几率</span><span id="userDodge">12%</span></div>
+
+            <h3 class="panel-title" style="margin-top:25px;">身上装备</h3>
+            <div class="equip-grid">
+                <div class="equip-slot">武器</div>
+                <div class="equip-slot">头盔</div>
+                <div class="equip-slot">衣服</div>
+                <div class="equip-slot">腰带</div>
+                <div class="equip-slot">护腿</div>
+                <div class="equip-slot">鞋子</div>
+            </div>
+        </div>
+
+        <!-- 中间战斗场景 -->
+        <div class="center-scene" id="mainScene">
+            <div class="hero-model">
+                <div class="hp-bar"><div class="hp-player" id="heroHpBar"></div></div>
+                <img src="https://picsum.photos/id/1040/360/460" alt="剑仙">
+            </div>
+
+            <!-- 三大顶级技能特效 -->
+            <div class="skill-burst skill-jianqi" id="skill1"></div>
+            <div class="skill-burst skill-lei" id="skill2"></div>
+            <div class="skill-burst skill-zhantian" id="skill3"></div>
+
+            <div class="monster-model">
+                <div class="hp-bar"><div class="hp-monster" id="monsterHpBar"></div></div>
+                <img id="monsterImg" src="https://picsum.photos/id/1038/360/460" alt="山林妖兽">
+            </div>
+        </div>
+
+        <!-- 右侧任务面板 -->
+        <div class="right-panel">
+            <h3 class="panel-title">当前主线任务</h3>
+            <div class="task-item">
+                <div class="task-title">斩除山林妖兽</div>
+                <div>击杀妖兽：<span id="taskKill">0</span>/15</div>
+                <div>任务奖励：灵石800 修为1200</div>
+            </div>
+            <h3 class="panel-title" style="margin-top:25px;">修炼状态</h3>
+            <div class="attr-item"><span>挂机收益</span><span>每分钟修为+85</span></div>
+            <div class="attr-item"><span>离线存储</span><span>最大8小时</span></div>
+        </div>
+    </div>
+
+    <!-- 底部技能栏 -->
+    <div class="bottom-operate">
+        <button class="skill-key" onclick="castSkill(1)">清风剑气<br><small>耗80真元</small></button>
+        <button class="skill-key" onclick="castSkill(2)">紫霄雷狱<br><small>耗130真元</small></button>
+        <button class="skill-key" onclick="castSkill(3)">斩天剑决<br><small>耗180真元</small></button>
+        <button class="func-key auto-close" id="autoFightBtn" onclick="toggleAutoFight()">开启全自动修炼</button>
+        <button class="func-key auto-close" onclick="openCultivate()">原地打坐修炼</button>
+    </div>
+
+    <!-- 打坐弹窗 -->
+    <div class="pop-box" id="cultivatePop">
+        <span class="pop-close" onclick="closePop()">×</span>
+        <h3 class="pop-title">静心打坐 悟道修行</h3>
+        <p style="text-align:center;font-size:16px;line-height:2;margin:15px 0">
+            每秒自动恢复气血真元<br>
+            每秒获得修为值 <span style="color:#ffd369">+12</span>
+        </p>
+        <div style="text-align:center;margin-top:20px">
+            <button class="func-key auto-close" onclick="startCultivate()">开始打坐</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// 本地存档读取
+let gameData = JSON.parse(localStorage.getItem('JianXianGameData')) || {
+    level:1,
+    realm:"炼气一重",
+    hp:2200,maxHp:2200,
+    mp:1800,maxMp:1800,
+    atk:320,def:160,
+    critRate:18,dodgeRate:12,
+    exp:0,needExp:450,
+    stone:9999,yuanqi:5200,power:3800,
+    taskKill:0
+};
+
+// 怪物基础数据
+let monsterData = {
+    hp:2600,maxHp:2600,
+    atk:145,def:70,
+    dropExp:160,dropStone:65
+};
+
+// 全局变量
+let autoFightState = false;
+let autoTimer = null;
+let cultivateTimer = null;
+
+// DOM绑定
+let userLvDom = document.getElementById('userLv');
+let userRealmDom = document.getElementById('userLevel');
+let userExpDom = document.getElementById('userExp');
+let stoneDom = document.getElementById('stoneNum');
+let yuanDom = document.getElementById('yuanNum');
+let powerDom = document.getElementById('fightPower');
+let heroHpDom = document.getElementById('heroHpBar');
+let monsterHpDom = document.getElementById('monsterHpBar');
+let taskKillDom = document.getElementById('taskKill');
+let autoBtn = document.getElementById('autoFightBtn');
+let skillOne = document.getElementById('skill1');
+let skillTwo = document.getElementById('skill2');
+let skillThree = document.getElementById('skill3');
+let monsterImage = document.getElementById('monsterImg');
+let cultivatePopup = document.getElementById('cultivatePop');
+
+// 刷新全部游戏界面
+function refreshGameUI(){
+    userLvDom.innerText = gameData.level;
+    userRealmDom.innerText = gameData.realm;
+    userExpDom.style.width = (gameData.exp/gameData.needExp*100)+"%";
+    stoneDom.innerText = gameData.stone;
+    yuanDom.innerText = gameData.yuanqi;
+    powerDom.innerText = gameData.power;
+    taskKillDom.innerText = gameData.taskKill;
+
+    heroHpDom.style.width = (gameData.hp/gameData.maxHp*100)+"%";
+    monsterHpDom.style.width = (monsterData.hp/monsterData.maxHp*100)+"%";
+
+    document.getElementById('userHp').innerText = Math.floor(gameData.hp);
+    document.getElementById('userMp').innerText = Math.floor(gameData.mp);
+    document.getElementById('userAtk').innerText = gameData.atk;
+    document.getElementById('userDef').innerText = gameData.def;
+    document.getElementById('userCrit').innerText = gameData.critRate+"%";
+    document.getElementById('userDodge').innerText = gameData.dodgeRate+"%";
+
+    saveGameData();
+}
+
+// 本地存储存档
+function saveGameData(){
+    localStorage.setItem('JianXianGameData',JSON.stringify(gameData));
+}
+
+// 切换功能页面
+function switchPage(pageName){
+    console.log("切换页面："+pageName);
+}
+
+// 弹出伤害文字
+function createDamageText(left,top,num,isCritical){
+    let dmgDiv = document.createElement("div");
+    dmgDiv.className = "float-dmg "+(isCritical?"crit-dmg":"nor-dmg");
+    dmgDiv.innerText = "-"+num;
+    dmgDiv.style.left = left;
+    dmgDiv.style.top = top;
+    document.getElementById('mainScene').appendChild(dmgDiv);
+    setTimeout(()=>dmgDiv.remove(),1400);
+}
+
+// 释放修仙剑道技能
+function castSkill(skillId){
+    if(gameData.mp < 60){
+        alert("真元不足，无法催动剑道神通！");
+        return;
+    }
+    let costMp = 0,damageMultiple = 0,nowSkill;
+    switch(skillId){
+        case 1:costMp=80;damageMultiple=1.8;nowSkill=skillOne;break;
+        case 2:costMp=130;damageMultiple=2.6;nowSkill=skillTwo;break;
+        case 3:costMp=180;damageMultiple=3.8;nowSkill=skillThree;break;
+    }
+    gameData.mp -= costMp;
+    nowSkill.style.display = "block";
+    setTimeout(()=>{
+        skillOne.style.display="none";
+        skillTwo.style.display="none";
+        skillThree.style.display="none";
+    },850);
+
+    // 计算实战伤害
+    let finalDamage = Math.floor(gameData.atk * damageMultiple - monsterData.def * 0.6);
+    finalDamage = finalDamage < 35 ? 35 : finalDamage;
+    let isBaoJi = Math.random()*100 < gameData.critRate;
+    if(isBaoJi) finalDamage *= 2;
+    monsterData.hp -= finalDamage;
+    createDamageText("60%","28%",finalDamage,isBaoJi);
+    refreshGameUI();
+
+    setTimeout(monsterAttackAction,480);
+    if(monsterData.hp <= 0) monsterDeadAction();
+}
+
+// 怪物攻击玩家
+function monsterAttackAction(){
+    let hurt = Math.floor(monsterData.atk - gameData.def * 0.5);
+    hurt = hurt < 18 ? 18 : hurt;
+    if(Math.random()*100 < gameData.dodgeRate){
+        createDamageText("32%","28%","闪避成功",false);
+        return;
+    }
+    gameData.hp -= hurt;
+    createDamageText("32%","28%",hurt,false);
+    refreshGameUI();
+    if(gameData.hp <= 0){
+        alert("修行受挫，静心调息恢复状态！");
+        gameData.hp = gameData.maxHp;
+        gameData.mp = gameData.maxMp;
+        refreshGameUI();
+        closeAutoFight();
+    }
+}
+
+// 怪物死亡 升级突破境界
+function monsterDeadAction(){
+    gameData.exp += monsterData.dropExp;
+    gameData.stone += monsterData.dropStone;
+    gameData.taskKill += 1;
+
+    // 等级升级判定
+    while(gameData.exp >= gameData.needExp){
+        gameData.exp -= gameData.needExp;
+        gameData.level++;
+        // 属性全面提升
+        gameData.maxHp += 380;
+        gameData.hp = gameData.maxHp;
+        gameData.maxMp += 290;
+        gameData.mp = gameData.maxMp;
+        gameData.atk += 55;
+        gameData.def += 32;
+        gameData.power += 680;
+        gameData.needExp = Math.floor(gameData.needExp * 1.72);
+
+        // 境界划分
+        if(gameData.level >= 1 && gameData.level < 10) gameData.realm = "炼气一重~九重";
+        else if(gameData.level >=10 && gameData.level<20) gameData.realm = "筑基境";
+        else if(gameData.level >=20 && gameData.level<35) gameData.realm = "金丹境";
+        else if(gameData.level >=35) gameData.realm = "元婴境";
+
+        alert(`修为突破成功！成功晋升${gameData.realm}！`);
+    }
+    refreshGameUI();
+    setTimeout(refreshHighMonster,1500);
+}
+
+// 刷新高阶妖兽
+function refreshHighMonster(){
+    let randomVal = Math.random();
+    if(randomVal > 0.7){
+        monsterData.hp = 3200 + gameData.level * 240;
+        monsterData.atk = 160 + gameData.level * 22;
+        monsterImage.src = "https://picsum.photos/id/1060/360/460";
+    }else if(randomVal > 0.35){
+        monsterData.hp = 2900 + gameData.level * 190;
+        monsterData.atk = 150 + gameData.level * 17;
+        monsterImage.src = "https://picsum.photos/id/1055/360/460";
+    }else{
+        monsterData.hp = 2600 + gameData.level * 150;
+        monsterData.atk = 145 + gameData.level * 13;
+        monsterImage.src = "https://picsum.photos/id/1038/360/460";
+    }
+    monsterData.maxHp = monsterData.hp;
+    monsterData.dropExp = 160 + gameData.level * 35;
+    monsterData.dropStone = 65 + gameData.level * 18;
+    refreshGameUI();
+}
+
+// 开启关闭自动战斗
+function toggleAutoFight(){
+    autoFightState = !autoFightState;
+    if(autoFightState){
+        autoBtn.className = "func-key auto-open";
+        autoTimer = setInterval(()=>{
+            if(gameData.mp >=80) castSkill(1);
+            else gameData.mp = gameData.maxMp;
+        },2800);
+    }else{
+        closeAutoFight();
+    }
+}
+function closeAutoFight(){
+    autoFightState = false;
+    autoBtn.className = "func-key auto-close";
+    clearInterval(autoTimer);
+}
+
+// 打坐修炼弹窗
+function openCultivate(){
+    cultivatePopup.style.display = "block";
+}
+function closePop(){
+    cultivatePopup.style.display = "none";
+}
+// 开始打坐
+function startCultivate(){
+    closePop();
+    if(cultivateTimer) return;
+    cultivateTimer = setInterval(()=>{
+        gameData.hp = Math.min(gameData.hp+15,gameData.maxHp);
+        gameData.mp = Math.min(gameData.mp+10,gameData.maxMp);
+        gameData.exp +=12;
+        refreshGameUI();
+    },1000);
+    alert("进入打坐悟道状态，持续恢复气血真元，增长修为！");
+}
+
+// 游戏初始化
+refreshGameUI();
+</script>
+</body>
+</html>
