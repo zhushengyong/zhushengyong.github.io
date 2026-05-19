@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网页版植物大战僵尸</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{
+            background:#222;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            padding:20px;
+            color:#fff;
+            font-family:微软雅黑;
+        }
+        h1{color:#7ccd7c;margin-bottom:10px;}
+        #game{
+            border:3px solid #666;
+            background:#3c8b3c;
+        }
+        .panel{
+            margin:10px 0;
+            display:flex;
+            gap:20px;
+            font-size:18px;
+        }
+        .tip{color:#ccc;margin-top:8px;}
+    </style>
+</head>
+<body>
+    <h1>植物大战僵尸</h1>
+    <div class="panel">
+        <span>阳光：<span id="sun">150</span></span>
+        <span>血量：<span id="hp">10</span></span>
+    </div>
+    <canvas id="game" width="700" height="500"></canvas>
+    <div class="tip">点击格子种植豌豆射手，自动打僵尸</div>
+
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+let sun=150,houseHp=10;
+document.getElementById("sun").innerText=sun;
+document.getElementById("hp").innerText=houseHp;
+
+//格子尺寸
+const cell=50;
+const row=10,col=14;
+let plants=[];
+let zombies=[];
+let bullets=[];
+
+//画草地
+function drawMap(){
+    for(let y=0;y<row;y++){
+        for(let x=0;x<col;x++){
+            ctx.fillStyle=(x+y)%2?"#4a9c4a":"#3c8b3c";
+            ctx.fillRect(x*cell,y*cell,cell,cell);
+        }
+    }
+}
+
+//植物类
+class Plant{
+    constructor(x,y){
+        this.x=x;
+        this.y=y;
+        this.cd=0;
+    }
+    update(){
+        this.cd++;
+        if(this.cd>=25){
+            bullets.push({x:this.x*cell+25,y:this.y*cell+25,speed:6});
+            this.cd=0;
+        }
+    }
+    draw(){
+        ctx.fillStyle="#228b22";
+        ctx.beginPath();
+        ctx.arc(this.x*cell+25,this.y*cell+25,20,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle="#fff";
+        ctx.font="16px sans-serif";
+        ctx.fillText="豌",this.x*cell+17,this.y*cell+30;
+    }
+}
+
+//僵尸类
+class Zombie{
+    constructor(y){
+        this.x=13;
+        this.y=y;
+        this.hp=3;
+        this.speed=0.3;
+    }
+    update(){
+        this.x-=this.speed;
+        if(this.x<=0) houseHp--,document.getElementById("hp").innerText=houseHp;
+    }
+    draw(){
+        ctx.fillStyle="#8b4513";
+        ctx.fillRect(this.x*cell+5,this.y*cell+5,40,40);
+        ctx.fillStyle="#fff";
+        ctx.fillText="僵",this.x*cell+15,this.y*cell+30;
+    }
+}
+
+//子弹
+function drawBullet(){
+    bullets.forEach((b,i)=>{
+        b.x+=b.speed;
+        ctx.fillStyle="#ffff00";
+        ctx.beginPath();
+        ctx.arc(b.x,b.y,6,0,Math.PI*2);
+        ctx.fill();
+        //碰撞僵尸
+        zombies.forEach((z,idx)=>{
+            if(Math.abs(b.x-z.x*cell-25)<25&&Math.abs(b.y-z.y*cell-25)<25){
+                z.hp--;
+                bullets.splice(i,1);
+                if(z.hp<=0) zombies.splice(idx,1);
+            }
+        })
+    })
+}
+
+//点击种植物
+canvas.onclick=e=>{
+    let rect=canvas.getBoundingClientRect();
+    let x=Math.floor((e.clientX-rect.left)/cell);
+    let y=Math.floor((e.clientY-rect.top)/cell);
+    if(sun>=50){
+        let has=plants.some(p=>p.x==x&&p.y==y);
+        if(!has&&x<12){
+            plants.push(new Plant(x,y));
+            sun-=50;
+            document.getElementById("sun").innerText=sun;
+        }
+    }
+}
+
+//自动刷僵尸
+setInterval(()=>{
+    let r=Math.floor(Math.random()*row);
+    zombies.push(new Zombie(r));
+},2500);
+
+//游戏主循环
+function gameLoop(){
+    if(houseHp<=0){
+        alert("游戏结束！僵尸攻破房子啦");
+        return;
+    }
+    drawMap();
+    plants.forEach(p=>{p.update();p.draw();});
+    zombies.forEach(z=>{z.update();z.draw();});
+    drawBullet();
+    requestAnimationFrame(gameLoop);
+}
+gameLoop();
+</script>
+</body>
+</html>
